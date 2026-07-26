@@ -1,17 +1,20 @@
 from enum import Enum
 from typing import Optional
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from datetime import datetime, date
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator, computed_field
+
 
 class TaskStatus(str, Enum):
     TODO = "ToDo"
     IN_PROGRESS = "InProgress"
     DONE = "Done"
 
+
 class TaskPriority(str, Enum):
     LOW = "Low"
     MEDIUM = "Medium"
     HIGH = "High"
+
 
 class TaskCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -20,6 +23,7 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -29,6 +33,7 @@ class TaskCreate(BaseModel):
             raise ValueError("Title must be 1-200 characters after stripping whitespace.")
         return v
 
+
 class TaskUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: Optional[str] = None
@@ -36,6 +41,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -51,6 +57,7 @@ class TaskUpdate(BaseModel):
             raise ValueError("At least one field must be provided for an update.")
         return self
 
+
 class TaskResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
@@ -59,5 +66,13 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: TaskPriority
     assignee: Optional[str]
+    due_date: Optional[date] = None
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def overdue(self) -> bool:
+        if self.due_date is None or self.status == TaskStatus.DONE:
+            return False
+        return self.due_date < date.today()
