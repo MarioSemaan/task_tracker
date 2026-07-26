@@ -749,6 +749,13 @@
         }
       }
 
+      function createPill(className, text) {
+        const el = document.createElement("span");
+        el.className = className;
+        el.textContent = text;
+        return el;
+      }
+
       function renderCard(task) {
         const card = document.createElement("div");
         card.className = "card";
@@ -799,25 +806,21 @@
         const metaLeft = document.createElement("div");
         metaLeft.className = "meta-left";
 
-        const badge = document.createElement("span");
-        badge.className = `priority-badge priority-${task.priority}`;
-        badge.textContent = task.priority;
-        metaLeft.appendChild(badge);
+        metaLeft.appendChild(
+          createPill(`priority-badge priority-${task.priority}`, task.priority),
+        );
 
         if (task.assignee) {
-          const assignee = document.createElement("span");
-          assignee.className = "assignee-tag";
-          assignee.textContent = task.assignee;
-          metaLeft.appendChild(assignee);
+          metaLeft.appendChild(createPill("assignee-tag", task.assignee));
         }
 
         if (task.due_date) {
-          const duePill = document.createElement("span");
-          duePill.className = task.overdue ? "overdue-pill" : "due-pill";
-          duePill.textContent = task.overdue
+          const label = task.overdue
             ? `Overdue: ${task.due_date}`
             : `Due: ${task.due_date}`;
-          metaLeft.appendChild(duePill);
+          metaLeft.appendChild(
+            createPill(task.overdue ? "overdue-pill" : "due-pill", label),
+          );
         }
 
         const editBtn = document.createElement("button");
