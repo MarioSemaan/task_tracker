@@ -77,6 +77,26 @@
         display: none;
       }
 
+      .filter-bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+
+      .filter-bar input,
+      .filter-bar label {
+        font-size: 0.85rem;
+      }
+
+      .filter-bar input[type="text"] {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font: inherit;
+      }
+
       .board {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -196,6 +216,21 @@
         line-height: 1.4;
       }
 
+      .tags-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .tag-chip {
+        font-size: 0.72rem;
+        color: #1e40af;
+        background: #dbeafe;
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+
       .card .meta {
         display: flex;
         justify-content: space-between;
@@ -208,6 +243,7 @@
       .meta-left {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 6px;
       }
 
@@ -217,6 +253,23 @@
         background: #e5e7eb;
         border-radius: 999px;
         padding: 3px 8px;
+      }
+
+      .due-pill {
+        font-size: 0.75rem;
+        color: #374151;
+        background: #e0f2fe;
+        border-radius: 999px;
+        padding: 3px 8px;
+      }
+
+      .overdue-pill {
+        font-size: 0.75rem;
+        color: white;
+        background: var(--danger);
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-weight: 600;
       }
 
       .priority-badge {
@@ -408,6 +461,14 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
 
+      <div class="filter-bar">
+        <input type="text" id="tag-filter-input" placeholder="Filter by tag..." />
+        <label>
+          <input type="checkbox" id="overdue-filter-checkbox" />
+          Overdue only
+        </label>
+      </div>
+
       <section id="board" class="board" aria-live="polite"></section>
     </main>
 
@@ -460,6 +521,19 @@
               <label for="task-assignee">Assignee</label>
               <input id="task-assignee" name="assignee" type="text" />
             </div>
+            <div class="form-row">
+              <label for="task-due-date">Due date</label>
+              <input id="task-due-date" name="dueDate" type="date" />
+            </div>
+            <div class="form-row">
+              <label for="task-tags">Tags (comma-separated)</label>
+              <input
+                id="task-tags"
+                name="tags"
+                type="text"
+                placeholder="backend, urgent"
+              />
+            </div>
             <input id="task-id" name="taskId" type="hidden" />
             <div class="field-error" id="task-form-error"></div>
             <div class="form-actions">
@@ -497,9 +571,15 @@
       const taskStatusInput = document.getElementById("task-status");
       const taskPriorityInput = document.getElementById("task-priority");
       const taskAssigneeInput = document.getElementById("task-assignee");
+      const taskDueDateInput = document.getElementById("task-due-date");
+      const taskTagsInput = document.getElementById("task-tags");
       const taskIdInput = document.getElementById("task-id");
       const taskTitleError = document.getElementById("task-title-error");
       const taskFormError = document.getElementById("task-form-error");
+      const tagFilterInput = document.getElementById("tag-filter-input");
+      const overdueFilterCheckbox = document.getElementById(
+        "overdue-filter-checkbox",
+      );
       let editingTaskId = null;
 
       function showError(message) {
@@ -530,6 +610,8 @@
           taskStatusInput.value = task.status || "ToDo";
           taskPriorityInput.value = task.priority || "Medium";
           taskAssigneeInput.value = task.assignee || "";
+          taskDueDateInput.value = task.due_date || "";
+          taskTagsInput.value = (task.tags || []).join(", ");
         }
         modalOverlay.classList.add("open");
       }
@@ -552,8 +634,14 @@
         boardState = "loading";
         render();
 
+        const params = new URLSearchParams();
+        const tagValue = tagFilterInput.value.trim();
+        if (tagValue) params.set("tag", tagValue);
+        if (overdueFilterCheckbox.checked) params.set("overdue", "true");
+        const query = params.toString() ? `?${params.toString()}` : "";
+
         try {
-          const res = await fetch(`${API_BASE}/tasks`);
+          const res = await fetch(`${API_BASE}/tasks${query}`);
           if (!res.ok) throw new Error("Failed to load tasks");
 
           tasks = await res.json();
@@ -693,6 +781,18 @@
           card.appendChild(description);
         }
 
+        if (task.tags && task.tags.length > 0) {
+          const tagsRow = document.createElement("div");
+          tagsRow.className = "tags-row";
+          for (const tag of task.tags) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip";
+            chip.textContent = tag;
+            tagsRow.appendChild(chip);
+          }
+          card.appendChild(tagsRow);
+        }
+
         const meta = document.createElement("div");
         meta.className = "meta";
 
@@ -709,6 +809,15 @@
           assignee.className = "assignee-tag";
           assignee.textContent = task.assignee;
           metaLeft.appendChild(assignee);
+        }
+
+        if (task.due_date) {
+          const duePill = document.createElement("span");
+          duePill.className = task.overdue ? "overdue-pill" : "due-pill";
+          duePill.textContent = task.overdue
+            ? `Overdue: ${task.due_date}`
+            : `Due: ${task.due_date}`;
+          metaLeft.appendChild(duePill);
         }
 
         const editBtn = document.createElement("button");
@@ -798,6 +907,9 @@
         }
       });
 
+      tagFilterInput.addEventListener("input", () => fetchTasks());
+      overdueFilterCheckbox.addEventListener("change", () => fetchTasks());
+
       taskForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         clearModalErrors();
@@ -815,6 +927,11 @@
           assignee: taskAssigneeInput.value.trim()
             ? taskAssigneeInput.value.trim()
             : null,
+          due_date: taskDueDateInput.value || null,
+          tags: taskTagsInput.value
+            .split(",")
+            .map((t) => t.trim())
+            .filter((t) => t.length > 0),
         };
 
         // Only include status if it actually changed from the task's
