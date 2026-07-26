@@ -204,3 +204,45 @@ def test_patch_due_date_updates_only_that_field(client, created_task):
     body = r.json()
     assert body["due_date"] == new_due
     assert body["title"] == created_task["title"]
+
+    # Tags / labels
+
+def test_create_task_with_tags_returns_201_with_tags(client):
+    r = client.post("/tasks", json={"title": "Tagged task", "tags": ["backend", "urgent"]})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["tags"] == ["backend", "urgent"]
+
+def test_create_task_with_empty_tag_returns_422(client):
+    r = client.post("/tasks", json={"title": "Bad tag task", "tags": ["backend", "   "]})
+    assert r.status_code == 422
+
+def test_patch_tags_updates_only_that_field(client, created_task):
+    r = client.patch(f"/tasks/{created_task['id']}", json={"tags": ["frontend"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["tags"] == ["frontend"]
+    assert body["title"] == created_task["title"]
+
+def test_patch_tags_does_not_affect_unrelated_fields(client):
+    create = client.post("/tasks", json={"title": "Task", "priority": "High", "tags": ["a"]})
+    task_id = create.json()["id"]
+    r = client.patch(f"/tasks/{task_id}", json={"tags": ["b", "c"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["tags"] == ["b", "c"]
+    assert body["priority"] == "High"
+
+def test_list_tasks_filter_by_tag_returns_only_matches(client):
+    client.post("/tasks", json={"title": "A", "tags": ["backend"]})
+    client.post("/tasks", json={"title": "B", "tags": ["frontend"]})
+    r = client.get("/tasks", params={"tag": "backend"})
+    assert r.status_code == 200
+    results = r.json()
+    assert len(results) == 1
+    assert results[0]["title"] == "A"
+
+def test_list_tasks_filter_by_tag_no_match_returns_200_and_empty_list(client, created_task):
+    r = client.get("/tasks", params={"tag": "nonexistent"})
+    assert r.status_code == 200
+    assert r.json() == []
