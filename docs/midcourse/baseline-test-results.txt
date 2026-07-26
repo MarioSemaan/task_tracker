@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/reine/Desktop/TaskTracker/task-tracker-api/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/reine/Desktop/TaskTracker/task-tracker-api
+plugins: anyio-4.14.2
+collecting ... collected 20 items
+
+tests/test_tasks.py::test_create_task_valid_returns_201_with_full_body PASSED [  5%]
+tests/test_tasks.py::test_create_task_missing_title_returns_422 PASSED   [ 10%]
+tests/test_tasks.py::test_create_task_blank_title_returns_422 PASSED     [ 15%]
+tests/test_tasks.py::test_create_task_invalid_priority_returns_422 PASSED [ 20%]
+tests/test_tasks.py::test_create_task_unknown_field_returns_422 PASSED   [ 25%]
+tests/test_tasks.py::test_list_tasks_empty_returns_200_and_empty_list PASSED [ 30%]
+tests/test_tasks.py::test_list_tasks_filter_by_status_no_match_returns_200_and_empty_list PASSED [ 35%]
+tests/test_tasks.py::test_list_tasks_filter_by_priority_returns_only_matches PASSED [ 40%]
+tests/test_tasks.py::test_get_task_by_id_returns_task PASSED             [ 45%]
+tests/test_tasks.py::test_get_task_by_id_not_found_returns_404_with_detail PASSED [ 50%]
+tests/test_tasks.py::test_patch_partial_update_keeps_other_fields PASSED [ 55%]
+tests/test_tasks.py::test_patch_not_found_returns_404 PASSED             [ 60%]
+tests/test_tasks.py::test_patch_valid_transition_todo_to_inprogress_returns_200 PASSED [ 65%]
+tests/test_tasks.py::test_patch_invalid_transition_todo_to_done_returns_422 PASSED [ 70%]
+tests/test_tasks.py::test_patch_same_status_returns_422 PASSED           [ 75%]
+tests/test_tasks.py::test_patch_empty_json_body_returns_422_validation_error PASSED [ 80%]
+tests/test_tasks.py::test_patch_with_unknown_field_returns_422_validation_error PASSED [ 85%]
+tests/test_tasks.py::test_patch_invalid_priority_returns_422_validation_error PASSED [ 90%]
+tests/test_tasks.py::test_delete_existing_returns_204_no_body PASSED     [ 95%]
+tests/test_tasks.py::test_delete_missing_returns_404 PASSED              [100%]
+
+============================== 20 passed in 0.06s ==============================
