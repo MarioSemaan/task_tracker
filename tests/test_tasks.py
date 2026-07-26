@@ -1,5 +1,6 @@
 # FILE: tests/test_tasks.py
 import pytest
+from datetime import date, timedelta
 
 # POST /tasks
 
@@ -150,3 +151,56 @@ def test_delete_missing_returns_404(client):
     r = client.delete("/tasks/doesnotexist")
     assert r.status_code == 404
     assert r.json()["detail"].startswith("Task with id doesnotexist not found")
+
+
+# Due dates + overdue
+
+def test_create_task_with_valid_due_date_returns_201_with_due_date(client):
+    due = (date.today() + timedelta(days=3)).isoformat()
+    r = client.post("/tasks", json={"title": "Task with due date", "due_date": due})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["due_date"] == due
+
+def test_create_task_with_invalid_due_date_format_returns_422(client):
+    r = client.post("/tasks", json={"title": "Bad date task", "due_date": "not-a-date"})
+    assert r.status_code == 422
+
+def test_task_with_past_due_date_and_not_done_is_overdue(client):
+    past = (date.today() - timedelta(days=1)).isoformat()
+    create = client.post("/tasks", json={"title": "Overdue task", "due_date": past})
+    assert create.status_code == 201
+    assert create.json()["overdue"] is True
+
+def test_task_with_past_due_date_but_done_is_not_overdue(client):
+    past = (date.today() - timedelta(days=1)).isoformat()
+    create = client.post("/tasks", json={"title": "Finished late task", "due_date": past})
+    task_id = create.json()["id"]
+
+    # Move through valid transitions: ToDo -> InProgress -> Done
+    r1 = client.patch(f"/tasks/{task_id}", json={"status": "InProgress"})
+    assert r1.status_code == 200
+    r2 = client.patch(f"/tasks/{task_id}", json={"status": "Done"})
+    assert r2.status_code == 200
+
+    assert r2.json()["overdue"] is False
+
+def test_list_tasks_filter_overdue_true_returns_only_overdue(client):
+    past = (date.today() - timedelta(days=1)).isoformat()
+    future = (date.today() + timedelta(days=1)).isoformat()
+    client.post("/tasks", json={"title": "Overdue one", "due_date": past})
+    client.post("/tasks", json={"title": "Not overdue one", "due_date": future})
+
+    r = client.get("/tasks", params={"overdue": "true"})
+    assert r.status_code == 200
+    results = r.json()
+    assert len(results) == 1
+    assert results[0]["title"] == "Overdue one"
+
+def test_patch_due_date_updates_only_that_field(client, created_task):
+    new_due = (date.today() + timedelta(days=5)).isoformat()
+    r = client.patch(f"/tasks/{created_task['id']}", json={"due_date": new_due})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["due_date"] == new_due
+    assert body["title"] == created_task["title"]
