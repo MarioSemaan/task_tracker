@@ -1,80 +1,77 @@
 # Task Tracker API
 
-A minimal learning-project REST API for tracking tasks, built with
-Python and FastAPI.
+A learning-project Task Tracker with a Python/FastAPI backend (in-memory store, no database) and a vanilla JS Kanban frontend, built incrementally across Modules 1-3 with AI-assisted workflows, and extended for the mid-course project with due dates and tags.
 
-This is Module 1 of the project: it stands up the FastAPI application
-and a health-check endpoint only. No task CRUD endpoints, database,
-authentication, or frontend are included yet.
+## Features
 
-## Architecture
-
-Per ADR-001, this project uses **FastAPI + Pydantic with an in-memory
-dict-based store** — no database, no ORM. This keeps setup to a single
-`pip install` and a single run command, with no persistence machinery
-beyond what a learning project needs. See ADR-001 for the full
-reasoning and trade-offs (data does not persist across restarts).
+- Task CRUD with status (`ToDo`, `InProgress`, `Done`) and priority (`Low`, `Medium`, `High`)
+- Forward-only status transitions: `ToDo → InProgress → Done`
+- Due dates with computed overdue detection and filtering
+- Tags/labels with filtering
+- Kanban board with drag-and-drop, priority sorting, and loading/empty/ready/error states
+- Create/edit modal with client + server validation
 
 ## Prerequisites
 
-- Python 3.10 or later
+- Python 3.10+
 - pip
 
 ## Setup
 
-1. Create and activate a virtual environment:
+1. Clone the repo and check out the `mid-course-project` branch:
+   ```bash
+   git clone https://github.com/<your-username>/task-tracker.git
+   cd task-tracker
+   git checkout mid-course-project
+   ```
 
-   **Linux/macOS:**
-```bash
+2. Create and activate a virtual environment:
+   ```bash
    python3 -m venv venv
-   source venv/bin/activate
-```
+   source venv/bin/activate        # Windows: venv\Scripts\Activate.ps1
+   ```
 
-   **Windows (PowerShell):**
-```powershell
-   python -m venv venv
-   venv\Scripts\Activate.ps1
-```
-
-2. Install dependencies:
-```bash
+3. Install dependencies:
+   ```bash
    pip install -r requirements.txt
-```
+   ```
 
-3. Copy the example environment file:
-
-   **Linux/macOS:**
-```bash
+4. Copy the example environment file:
+   ```bash
    cp .env.example .env
-```
+   ```
 
-   **Windows (PowerShell):**
-```powershell
-   Copy-Item .env.example .env
-```
-
-## Running the server
+## Running the backend
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-The server will start at `http://localhost:8000`.
+The API will be available at `http://localhost:8000`.
 
-## Testing the health endpoint
+- Swagger docs: `http://localhost:8000/docs`
+- Health check: `curl http://localhost:8000/health`
+
+## Running the frontend
+
+With the backend running, open `frontend/index.html` directly in your browser, or serve it with a local static server (e.g. VS Code Live Server) at `http://localhost:5500`.
+
+The frontend expects the backend at `http://localhost:8000` (see `API_BASE` in `frontend/index.html`).
+
+## Running tests
 
 ```bash
-curl http://localhost:8000/health
+python -m pytest -v
 ```
 
-Expected response:
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-07-25T12:00:00.000000+00:00"
-}
-```
+All 32 tests (20 original + 12 added for due dates and tags) should pass.
 
-## API documentation (Swagger UI)
+## Project documentation
 
-With the server running, open your browser to:
+See `docs/adr/ADR-001-backend-architecture.md` for the original architecture decision, and `docs/midcourse/` for the mid-course project documentation:
+
+- `user-stories.md` — feature user stories and acceptance criteria
+- `mini-adr.md` — design decisions for due dates and tags
+- `prompt-log.md` — AI prompts used, with weak/improved comparisons
+- `verification.md` — test results, manual checks, behavior contract, and Break Test evidence
+- `reflection.md` — project reflection
