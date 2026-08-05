@@ -11,7 +11,7 @@
 
 ## CI evidence
 - **Workflow file**: `.github/workflows/ci.yml`
-- **Latest run**: GitHub Actions ran the full suite on push to `final-project`. The workflow installed dependencies from `requirements.txt` (which includes `pytest` and `httpx`) and ran `python -m pytest -v`. All 20 tests passed. Run is visible at: `https://github.com/MarioSemaan/task_tracker/actions/new` under the most recent push to `final-project`.
+- **Latest run**: GitHub Actions ran the full suite on push to `final-project`. The workflow installed dependencies from `requirements.txt` (which includes `pytest` and `httpx`) and ran `python -m pytest -v`. All 20 tests passed. Run is visible at: `https://github.com/MarioSemaan/task_tracker/actions/runs/31004708404` under the most recent push to `final-project`.
 - **Test command used by CI**: `python -m pytest -v` — changed from an earlier draft that used bare `pytest -v`, which fails with `ModuleNotFoundError: No module named 'app'` because the console-script form of pytest does not add the project root to `sys.path`. `python -m pytest` does. The workflow file was updated to match after this was caught during the claim-vs-reality check below.
 - **Shortcut check**: Verified no `continue-on-error`, no `|| true`, no `--exit-zero`, pytest is not skipped, and the Python version is pinned to `3.11` (not `latest`).
 
