@@ -9,8 +9,12 @@
 | AI comment | Grade: Useful / Noise / Wrong | Reason | Verification or decision |
 |---|---|---|---|
 | "Replace in-memory dictionary storage with SQLite database" | Wrong | Project rules explicitly prohibit adding external databases or major architecture shifts. | Rejected proposal. |
-| "Add docstrings to API endpoints in `app/main.py`" | Useful | Improves maintainability for future developers without changing runtime logic. | Applied docstring documentation. |
+| "Add docstrings to API endpoints in `app/main.py`" | Useful | Improves maintainability for future developers without changing runtime logic. | Applied docstring documentation. Same pass also added docstrings to `app/models.py` and `app/storage.py` — no behavior changed, verified with `python -m pytest -v` (20/20 passing) after each file. |
+| AI-drafted docstring pass on `app/business_rules.py` surfaced that the file's imports and its entire `validate_status_transition` function were duplicated verbatim (pasted twice, one after the other) | Wrong (bug, not style) | Exact duplication of an entire function block is a copy-paste artifact, not a stylistic issue — the second definition silently shadowed the first. Behavior was accidentally correct (Python just uses the last definition), so tests never caught it. | Removed the duplicate import lines and duplicate function body, kept the single documented version, re-ran `python -m pytest -v` (20/20 passing) to confirm nothing else changed. This is the one app/ change in this repo that goes beyond docstrings-only — logged here per the "Protect app/ and frontend/" rule. |
 | "Reformat code using custom line length of 70 characters" | Noise | Unnecessary stylistic change that adds zero structural value. | Ignored. |
+
+### Summary of every app/ change made during the final project
+Per the "Protect app/ and frontend/" ground rule, everything touched in `app/` during this phase is listed above: docstrings added to `app/main.py`, `app/models.py`, `app/storage.py`, and `app/business_rules.py` (documentation-supported, no logic change), plus one bug fix — removing duplicated code in `app/business_rules.py`. `frontend/` was not touched at all.
 
 ## AI security mini-review
 | Finding | File evidence | Grade: Valid / False Positive / Noise | Reason | Next action |
