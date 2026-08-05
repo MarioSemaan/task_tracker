@@ -1,98 +1,39 @@
 # Personal AI Playbook
 
 ## When I reach for AI first
-
-Tasks where AI consistently made me faster during this course:
-
-- **CI and Docker boilerplate**: Claude Code drafted a clean multi-stage
-  Dockerfile and ci.yml in one pass. These are pattern-heavy files where
-  the real work is inspection and safety-checking the output, not
-  generating it from scratch.
-- **Docstring drafts**: endpoint docstrings for `app/main.py` were
-  generated and then verified against the live `/docs` page — a much
-  faster loop than writing them cold.
-- **Test edge cases**: AI suggested the empty-body PATCH test and the
-  same-status transition test, both of which ended up in `tests/test_tasks.py`
-  and caught real behavior I hadn't explicitly specified.
-- **Planning documents**: the grounded Codex plan for the comments
-  feature (Part 5.4) was genuinely more useful than I expected, because
-  I required it to read `app/models.py` and `app/storage.py` first — it
-  extended the existing dict pattern rather than inventing a database.
+- **CI/Docker boilerplate**: Claude Code drafted a working multi-stage Dockerfile and `ci.yml` in one pass — pattern-heavy files where the real work is inspecting the output, not writing it from scratch.
+- **Docstring drafts**: generated, then checked against the live `/docs` page — faster than writing cold.
+- **Test edge cases**: AI suggested the empty-body PATCH test and the same-status transition test, both now in `tests/test_tasks.py`.
+- **Repo-grounded planning**: the Codex plan for the comments feature (Part 5.4) was genuinely useful once I required it to read `app/models.py` and `app/storage.py` first — it extended the existing dict pattern instead of inventing a database.
 
 ## When I do not reach for AI first
-
-- **Core business rules**: I wrote the status-transition logic in
-  `app/business_rules.py` by hand first, then used AI to generate tests
-  for it — not the other way around. If AI defines the rule and AI
-  writes the tests, neither is verifying anything.
-- **Security findings I'm about to act on**: the AI audit claimed
-  `allow_origins="*"` (a wildcard). I opened `app/main.py` and found
-  a specific localhost whitelist. Acting on that finding without
-  checking the file would have been a wasted change or a confusing PR
-  comment. Manual check first.
-- **Anything involving `.env` or real credentials**: non-negotiable,
-  no exceptions.
+- **Core business rules**: I wrote `app/business_rules.py` by hand, then used AI to generate tests for it — not the reverse. If AI writes both the rule and the test, neither is verifying anything.
+- **Security findings I'm about to act on**: the AI audit first claimed `allow_origins="*"`. Opening `app/main.py` showed a specific localhost whitelist instead. Manual check first, always.
+- **Anything involving `.env` or real credentials**: no exceptions.
 
 ## My non-negotiables
-
-1. Never paste `.env` values, credentials, API keys, tokens, or real
-   customer/personal data into any AI tool — only `.env.example`
-   placeholder values are shareable.
-2. Every AI-generated code change must pass `python -m pytest -v`
-   before being committed. "The diff looks correct" is not the same as
-   "the tests pass."
-3. No AI tool modifies `app/business_rules.py` without me reading
-   the diff line by line first — that file is the single source of
-   truth for what the API enforces.
+1. Never paste `.env` values, credentials, tokens, or real customer/personal data into any AI tool.
+2. Every AI-generated change must pass `python -m pytest -v` before being committed — a clean-looking diff is not the same as passing tests.
+3. No AI tool touches `app/business_rules.py` without me reading the diff line by line first — it's the single source of truth for what the API enforces.
 
 ## My review rules
-
-- Run `git diff` before accepting any generated change; read every
-  changed file, not just the file the prompt mentioned.
-- For security findings: label each one Valid / False Positive / Noise
-  with a one-sentence reason before deciding whether to act — the CORS
-  finding in this project is the concrete reason that rule exists.
-- For code review comments: label each one Useful / Noise / Wrong.
-  "Wrong" gets its own bucket because it wastes more than a glance —
-  it can cause me to "fix" a bug that doesn't exist.
-- Check generated files for exact duplication, not just correctness.
-  `app/business_rules.py` ran fine with its entire contents doubled;
-  nothing in "the tests pass" would have caught that.
+- Run `git diff` before accepting any change; read every changed file, not just the one the prompt mentioned.
+- Grade security findings Valid / False Positive / Noise, and review comments Useful / Noise / Wrong, before acting on any of them.
+- Check generated files for exact duplication, not just correctness — `app/business_rules.py` ran fine with its entire contents copy-pasted twice; nothing about "the tests pass" caught that.
 
 ## What I am still figuring out
-
-- How to set per-project rules for when a terminal agent (Claude Code)
-  is the right tool versus the in-editor chat (Cursor) — my current
-  heuristic is "repo-level tasks go to the terminal agent, file-level
-  edits go to the IDE," but it breaks down for tasks that are
-  technically one file but have broad logic implications.
-- At what point a governance worksheet becomes worth the overhead on a
-  solo project versus a team project — I kept it here because the
-  course required it, but I haven't settled on what the lightweight
-  version looks like for future personal work.
+- When a task is "one file but broad logic" — my current heuristic (repo-level → terminal agent, file-level → IDE chat) breaks down here.
+- How much governance overhead is worth keeping on a solo project versus a team one once the course requirement isn't forcing it.
 
 ## Decision Card
-
 | Decision | My answer |
 |---|---|
-| **New feature** | Design the model and storage changes by hand first; then use Claude Code (terminal agent) in plan mode to draft routes and tests — inspect the plan before any file is touched |
-| **Code review** | Codex App (desktop) for a read-only first-pass diff review; I grade every comment Useful/Noise/Wrong before acting on any of them |
-| **Debugging** | Paste the *exact* failing test name and error output, not a paraphrase — the pytest `ModuleNotFoundError` in this project was generic enough that vague prompts produced generic advice |
-| **Infrastructure (CI / Docker)** | Claude Code or Codex for the first draft; I read the generated YAML/Dockerfile end-to-end before committing, specifically checking for `continue-on-error`, `|| true`, `latest` tags, and root-user issues |
-| **Never paste** | `.env` values, API keys, auth tokens, real customer names, personal email addresses, production logs, or any database connection string with credentials in it |
-| **My one rule** | Before committing any AI-generated file, I will name the specific verification I ran — not just "I checked it," but "I ran `python -m pytest -v` and all 20 tests passed" or "I ran `curl /health` and got 200" |
+| **New feature** | Design the model/storage changes by hand first; then Claude Code in plan mode drafts routes and tests — I inspect the plan before any file is touched |
+| **Code review** | Codex App for a read-only first-pass diff; I grade every comment Useful/Noise/Wrong before acting |
+| **Debugging** | Paste the *exact* failing test name and error output, not a paraphrase — vague prompts produced generic advice on this project |
+| **Infrastructure (CI/Docker)** | AI drafts it; I read the YAML/Dockerfile end-to-end checking for `continue-on-error`, `\|\| true`, `latest` tags, and root-user issues before committing |
+| **Never paste** | `.env` values, API keys, auth tokens, real customer names/emails, production logs, or any connection string with credentials |
+| **My one rule** | Before committing any AI-generated file, name the specific verification I ran — "ran `python -m pytest -v`, 20/20 passed," not "I checked it" |
 
 ## 30-day re-read commitment
-
-Calendar reminder set for **30 days after submitting this project**:
-re-read `docs/ai-playbook.md` and ask one honest question: *am I still
-following it?*
-
-Specifically, check whether:
-- The never-paste rule was kept (no `.env` values, no credentials).
-- The "name the specific verification" rule was applied to at least one
-  AI-assisted commit message or PR description.
-- The Decision Card tool choices still match how I am actually working,
-  or whether new habits replaced them.
-
-If the answer is no, update the playbook with what changed and why.
+Reminder set for 30 days after submission: re-read this file and ask honestly — am I still following it? Specifically: was the never-paste rule kept, was "name the specific verification" applied to at least one real commit, and does the Decision Card still match how I'm actually working. If not, update it.
